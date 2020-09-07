@@ -37,12 +37,17 @@ import (
 type Map struct {
 	asName    map[int]string
 	asCountry map[int]string
+	asRanges  map[int][]IPRange
 	recs      []rec
 }
 
 type rec struct {
 	startIP, endIP netaddr.IP
 	asn            int
+}
+
+type IPRange struct {
+	StartIP, EndIP string
 }
 
 func OpenFile(filename string) (*Map, error) {
@@ -70,6 +75,7 @@ func OpenReader(r io.Reader) (*Map, error) {
 	m := &Map{
 		asName:    map[int]string{},
 		asCountry: map[int]string{},
+		asRanges:   map[int][]IPRange{},
 	}
 	for {
 		line, err := br.ReadSlice('\n')
@@ -105,6 +111,7 @@ func OpenReader(r io.Reader) (*Map, error) {
 			return nil, fmt.Errorf("bogus IP %q for line %q", endIPB, line)
 		}
 		m.recs = append(m.recs, rec{startIP, endIP, as})
+		m.asRanges[as] = append(m.asRanges[as], IPRange{startIP.String(), endIP.String()})
 	}
 }
 
@@ -129,6 +136,7 @@ func parseTSV(line []byte, dsts ...*[]byte) error {
 
 func (m *Map) ASName(as int) string    { return m.asName[as] }
 func (m *Map) ASCountry(as int) string { return m.asCountry[as] }
+func (m *Map) ASRanges(as int) []IPRange { return m.asRanges[as] }
 
 // ASofIP returns 0 on unknown.
 func (m *Map) ASofIP(ip netaddr.IP) int {
