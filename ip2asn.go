@@ -143,21 +143,31 @@ func (m *Map) ASofIP(ip netaddr.IP) int {
 	cand := sort.Search(len(m.recs), func(i int) bool {
 		return ip.Less(m.recs[i].startIP)
 	})
+	as, _ := m.recIndexHasIP(cand-1, ip)
+	return as
+}
+
+// ASRange returns the AS number and the start and end IP addresses
+// of the range containing the given IP address.
+func (m *Map) ASRange (ip netaddr.IP) (int, []string) {
+	cand := sort.Search(len(m.recs), func(i int) bool {
+		return ip.Less(m.recs[i].startIP)
+	})
 	return m.recIndexHasIP(cand-1, ip)
 }
 
 // recIndexHasIP returns the AS number of m.rec[i] if i is in range and
 // the record contains the given IP address.
-func (m *Map) recIndexHasIP(i int, ip netaddr.IP) (as int) {
+func (m *Map) recIndexHasIP(i int, ip netaddr.IP) (as int, r []string) {
 	if i < 0 {
-		return 0
+		return 0, []string{}
 	}
 	rec := &m.recs[i]
 	if rec.endIP.Less(ip) {
-		return 0
+		return 0, []string{}
 	}
 	if ip.Less(rec.startIP) {
-		return 0
+		return 0, []string{}
 	}
-	return rec.asn
+	return rec.asn, []string{rec.startIP.String(), rec.endIP.String()}
 }
